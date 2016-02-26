@@ -100,7 +100,7 @@ class TC_Featured_Listings_Widget extends WP_Widget
 
 			<section id="featured-listings-3" class="widget featured-listings">
 				<div class="widget-wrap">
-				<h1>We are Here</h1>
+					<?php $title = $instance['title']; ?>
 					<?php if( $title ): ?>
 						<h4><?php _e( $title, 'tc-helena-mls' ); ?></h4>
 					<?php endif; ?>

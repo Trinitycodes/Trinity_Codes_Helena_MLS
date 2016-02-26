@@ -105,7 +105,7 @@ class TC_Helena_MLS {
 	public function __construct() {
 
 		$this->plugin_name = 'tc-helena-mls';
-		$this->version = '1.0.0';
+		$this->version = '1.0.1';
 
 		// get the url, username, and password for the RETS from the wp_options
 		$this->rets_url = get_option( '_tc_mls_url' );
@@ -220,13 +220,22 @@ class TC_Helena_MLS {
 	 */
 	private function define_admin_hooks() {
 
-		$plugin_admin = new TC_Helena_MLS_Admin( $this->get_plugin_name(), $this->get_version() );
+		$plugin_admin = new TC_Helena_MLS_Admin( $this->get_plugin_name(), $this->get_version(), $this->get_rets_url(), $this->get_rets_login(), $this->get_rets_pass() );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_filter( 'cron_schedules', $plugin_admin, 'tc_add_cron_interval' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'tc_add_mls_options_page' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'tc_add_mls_admin_page' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'tc_register_mls_options' );
+		$this->loader->add_action( 'tc_execute_download_listings', $plugin_admin, 'download_listings' );
+		$this->loader->add_action( 'tc_execute_update_listings', $plugin_admin, 'update_property_listings' );
+		$this->loader->add_action( 'tc_execute_load_images', $plugin_admin, 'tc_load_initial_images' );
+		$this->loader->add_action( 'tc_execute_delete_listings', $plugin_admin, 'delete_all_properties' );
+
+		// run by cron
+		$this->loader->add_action( 'tc_download_properties', $plugin_admin, 'update_property_listings' );
+		$this->loader->add_action( 'tc_update_property_images', $plugin_admin, 'tc_load_initial_images' );
 
 	}
 
@@ -250,10 +259,6 @@ class TC_Helena_MLS {
 		$this->loader->add_shortcode( 'tc_display_thumbnail', $plugin_public, 'tc_load_property_thumbnail' );
 		$this->loader->add_shortcode( 'tc_display_gallery', $plugin_public, 'tc_load_property_gallery' );
 		$this->loader->add_shortcode( 'tc_property_agent', $plugin_public, 'tc_display_agent_section' );
-
-		// run by cron
-		$this->loader->add_action( 'tc_download_properties', $plugin_public, 'update_property_listings' );
-		$this->loader->add_action( 'tc_update_property_images', $plugin_public, 'tc_load_initial_images' );
 
 	}
 

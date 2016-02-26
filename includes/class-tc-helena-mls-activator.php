@@ -36,7 +36,7 @@ class TC_Helena_MLS_Activator {
 			wp_schedule_event( 1434963600, 'daily', 'tc_download_properties' );
 		}
 		if( !wp_next_scheduled( 'tc_update_property_images' ) ) {
-			wp_schedule_event( time(), '30minutes', 'tc_update_property_images' );
+			wp_schedule_event( time(), '15minutes', 'tc_update_property_images' );
 		}
 
 	}
