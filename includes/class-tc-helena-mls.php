@@ -105,7 +105,7 @@ class TC_Helena_MLS {
 	public function __construct() {
 
 		$this->plugin_name = 'tc-helena-mls';
-		$this->version = '1.0.1';
+		$this->version = '1.0.2';
 
 		// get the url, username, and password for the RETS from the wp_options
 		$this->rets_url = get_option( '_tc_mls_url' );
@@ -232,6 +232,7 @@ class TC_Helena_MLS {
 		$this->loader->add_action( 'tc_execute_update_listings', $plugin_admin, 'update_property_listings' );
 		$this->loader->add_action( 'tc_execute_load_images', $plugin_admin, 'tc_load_initial_images' );
 		$this->loader->add_action( 'tc_execute_delete_listings', $plugin_admin, 'delete_all_properties' );
+		$this->loader->add_action( 'admin_notices', $plugin_admin, 'tc_admin_notices' );
 
 		// run by cron
 		$this->loader->add_action( 'tc_download_properties', $plugin_admin, 'update_property_listings' );

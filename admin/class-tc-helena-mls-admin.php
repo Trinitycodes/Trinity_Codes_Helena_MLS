@@ -135,6 +135,29 @@ class TC_Helena_MLS_Admin {
 	}
 
 	/**
+	 * Display admin notices with associative array args.
+	 *
+	 * @since    1.0.0
+	 */
+	public function tc_admin_notices( $args ) {
+		
+		/**
+		 * $args contain 'type' & 'message' in an 
+		 * associative array.
+		 *
+		 * Options for 'type' are notice-error, notice-success, notice-info
+		 */
+		if( $args ) {
+			$message = $args['message'];
+			?>
+		    <div class="notice <?php echo $args['type']; ?> is-dismissible">
+		        <p><?php _e( $message, 'tc-helena-mls' ); ?></p>
+		    </div>
+		    <?php
+		}
+	}
+
+	/**
 	 * Register new cron intervals
 	 *
 	 * @since    1.0.0
@@ -303,9 +326,32 @@ class TC_Helena_MLS_Admin {
 			 	)
 		);
 
+		// Create another section of Page
+		 $settings_section = 'tc_download_settings';
+		 $page = $section_group;
+		 add_settings_section( 
+			 $settings_section,
+			 __( 'Download Settings', 'tc-helena-mls' ),
+			 array( $this, 'tc_download_section_description' ),
+			 $page
+		 );
+
+		add_settings_field(
+			 '_tc_download_limit',
+			 __('Download Limit', 'tc-helena-mls' ),
+			 array( $this, 'tc_render_rets_login_field' ),
+			 $page,
+			 $settings_section,
+			 array(
+			 		'type' => 'number',
+			 		'field_name' => '_tc_download_limit',
+			 	)
+		);
+
 		register_setting( $section_group, '_tc_mls_url', array( $this, 'tc_sanitize_string' ) );
 		register_setting( $section_group, '_tc_mls_user_login', array( $this, 'tc_sanitize_string') );
 		register_setting( $section_group, '_tc_mls_pass', array( $this, 'tc_sanitize_string') );
+		register_setting( $section_group, '_tc_download_limit', array( $this, 'tc_sanitize_string') );
 		
 	}
 
@@ -348,6 +394,16 @@ class TC_Helena_MLS_Admin {
 	public function tc_main_section_description() {
 
 		echo 'The RETS login information will need to be obtained from the Helena MLS and requires a valid realtor account.';
+
+	}
+
+	/**
+	 * Description to display above the download section on the settings page.
+	 * @return echo [description]
+	 */
+	public function tc_download_section_description() {
+
+		echo 'Set the download limit to less than 100 for testing, then set it to 9999 for production.';
 
 	}
 
@@ -407,6 +463,11 @@ class TC_Helena_MLS_Admin {
 		    		break;
 
 		    }
+
+		    // set the download limit & make sure it is a integer
+		    $download_limit = get_option( '_tc_download_limit', 12 );
+		    $download_limit = intval( $download_limit );
+
 		    // make the request and get the results
 		    $results = $rets->Search(
 		    	'Property', 
@@ -416,7 +477,7 @@ class TC_Helena_MLS_Admin {
 		    	'QueryType' => 'DMQL2',
 		        'Count' => 1, // count and records
 		        'Format' => 'COMPACT-DECODED',
-		        'Limit' => 9999,
+		        'Limit' => $download_limit,
 		        'StandardNames' => 0, // give system names
 		        'Select' => $select_string,
 		        )
@@ -625,12 +686,30 @@ class TC_Helena_MLS_Admin {
 		}
 
 		if( $full_download ) {
-			print_r( 'Full Download completed date was saved successfully!' );
+			do_action( 
+					'admin_notices',
+					array( 
+							'type' => 'notice-success',
+							'message' => 'Full Download completed date was saved successfully!'
+						)
+				);
 		} else {
-			print_r( 'The Update option was not updated.<br><br>' );
+			do_action( 
+					'admin_notices',
+					array( 
+							'type' => 'notice-error',
+							'message' => 'The Update option was not updated.'
+						)
+				);
 		}
-		print_r( $property_count . ' Properties were Downloaded by the downloader' );
 
+		do_action( 
+					'admin_notices',
+					array( 
+							'type' => 'notice-success',
+							'message' => $property_count . ' Properties were Downloaded by the downloader.'
+						)
+				);
 
 		// logout
 		$rets->Disconnect();
@@ -694,22 +773,27 @@ class TC_Helena_MLS_Admin {
 		    switch( $pc ) {
 
 		    	case 'RE_1':
-		    		$select_string = 'VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword1,L_Keyword2,L_Keyword3,L_Keyword4,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_1,LM_Int4_2,LM_Int4_8,LMD_MP_Latitude,LMD_MP_Longitude,LFD_GARAGE_5,LFD_STYLE_8,LFD_BASEMENT_11,LFD_COOLING_14,LFD_HEATING_15,LFD_ZONING_27,LFD_OUTBUILDINGS_32,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
+		    		$select_string = 'L_PictureCount,VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword1,L_Keyword2,L_Keyword3,L_Keyword4,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_1,LM_Int4_2,LM_Int4_8,LMD_MP_Latitude,LMD_MP_Longitude,LFD_GARAGE_5,LFD_STYLE_8,LFD_BASEMENT_11,LFD_COOLING_14,LFD_HEATING_15,LFD_ZONING_27,LFD_OUTBUILDINGS_32,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
 		    		break;
 
 		    	case 'LD_2':
-		    		$select_string = 'VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword3,L_Keyword10,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LMD_MP_Latitude,LMD_MP_Longitude,LMD_MP_Subdivision,LFD_OUTBUILDINGS_40,LFD_LIVESTOCKALLOWED_42,LFD_IRRIGATION_55,LFD_MINERALRIGHTS_56,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
+		    		$select_string = 'L_PictureCount,VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword3,L_Keyword10,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LMD_MP_Latitude,LMD_MP_Longitude,LMD_MP_Subdivision,LFD_OUTBUILDINGS_40,LFD_LIVESTOCKALLOWED_42,LFD_IRRIGATION_55,LFD_MINERALRIGHTS_56,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
 		    		break;
 
 		    	case 'CI_3':
-		    		$select_string = 'VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_13,LMD_MP_Latitude,LMD_MP_Longitude,LFD_COOLING_72,LFD_HEATING_73,LFD_ZONING_76,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
+		    		$select_string = 'L_PictureCount,VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_13,LMD_MP_Latitude,LMD_MP_Longitude,LFD_COOLING_72,LFD_HEATING_73,LFD_ZONING_76,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
 		    		break;
 
 		    	case 'MF_4':
-		    		$select_string = 'VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword7,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_1,LM_Int4_2,LM_Int4_8,LMD_MP_Latitude,LMD_MP_Longitude,LFD_STYLE_93,LFD_BASEMENT_94,LFD_COOLING_95,LFD_HEATING_96,LFD_ZONING_107,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
+		    		$select_string = 'L_PictureCount,VT_VTourURL,L_ListingID,L_Class,L_Type_,L_Area,L_AskingPrice,L_City,L_State,L_Zip,L_Keyword7,L_NumAcres,LO1_OrganizationName,L_ListingDate,L_Remarks,L_UpdateDate,L_Last_Photo_updt,L_DisplayId,L_Address,L_Status,LM_Char25_1,LM_Int4_2,LM_Int4_8,LMD_MP_Latitude,LMD_MP_Longitude,LFD_STYLE_93,LFD_BASEMENT_94,LFD_COOLING_95,LFD_HEATING_96,LFD_ZONING_107,LA1_LoginName,LA1_UserFirstName,LA1_UserLastName,LA1_PhoneNumber1,L_ListAgent1';
 		    		break;
 
 		    }
+
+		    // set the download limit & make sure it is a integer
+		    $download_limit = get_option( '_tc_download_limit', 12 );
+		    $download_limit = intval( $download_limit );
+
 		    // make the request and get the results
 		    $results = $rets->Search(
 		    	'Property', 
@@ -719,14 +803,13 @@ class TC_Helena_MLS_Admin {
 		    	'QueryType' => 'DMQL2',
 		        'Count' => 1, // count and records
 		        'Format' => 'COMPACT-DECODED',
-		        'Limit' => 9999,
+		        'Limit' => $download_limit,
 		        'StandardNames' => 0, // give system names
 		        'Select' => $select_string,
 		        )
 		    );
 
 		    $results_count = $results->getTotalResultsCount();
-		    print_r( "$results_count<br><br>" );
 
 		    set_time_limit(120);
 
@@ -994,7 +1077,14 @@ class TC_Helena_MLS_Admin {
 		    }
 
 		}
-		print_r( $property_count . ' Properties were Downloaded.' );
+
+		do_action( 
+					'admin_notices',
+					array( 
+							'type' => 'notice-success',
+							'message' => $property_count . ' Properties were Downloaded.'
+						)
+				);
 
 
 		// logout
@@ -1049,10 +1139,18 @@ class TC_Helena_MLS_Admin {
 								'compare' => 'NOT EXISTS',
 							),
 					),
-				'posts_per_page' => 100,
+				'posts_per_page' => 50,
 				'order' => 'ASC',
 			);
 		$my_query = new WP_Query( $args );
+
+		do_action( 
+			'admin_notices',
+			array( 
+					'type' => 'notice-info',
+					'message' => $my_query->post_count . ' posts were found.',
+				)
+		);
 
 		if( $my_query->have_posts() ) {
 
@@ -1070,7 +1168,7 @@ class TC_Helena_MLS_Admin {
 
 				if( $picture_count )
 					$number_of_images = $picture_count;
-
+				
 				/**
 				 * Create the gallery string of urls
 				 */
@@ -1088,6 +1186,16 @@ class TC_Helena_MLS_Admin {
 
 				if( $number_of_images > 0 ) {
 					foreach( $main_image as $image ):
+
+						// check to make sure this is an image and not a text file
+						// if content type is text/xml, then get the second image
+						if( $image->getContentType() == 'text/xml' && $number_of_images > 1 ) {
+							$main_image = $rets->GetObject( 'Property', 'Photo', $mls_num, '1' );
+						}
+
+					endforeach;
+
+					foreach( $main_image as $image ): 
 						
 						$filename = "image-thumb-$mls_num.jpg";
 
@@ -1208,7 +1316,14 @@ class TC_Helena_MLS_Admin {
 		}
 		wp_reset_postdata();
 		$image_count = strval($image_count);
-		print_r( '<br><br>' . $image_count . ' Images were Loaded.' );
+
+		do_action( 
+			'admin_notices',
+			array( 
+					'type' => 'notice-success',
+					'message' => $image_count . ' Images were Loaded.'
+				)
+		);
 
 		 // logout
 		$rets->Disconnect();
@@ -1260,12 +1375,19 @@ class TC_Helena_MLS_Admin {
 
 				
 			} // end while
-
+			delete_option( '_tc_full_download_complete' );
 
 		} else {
 			return false;
 		}
-		print_r( $counter . ' Properties Deleted.' );
+
+		do_action( 
+			'admin_notices',
+			array( 
+					'type' => 'notice-success',
+					'message' => $counter . ' Properties Deleted.'
+				)
+		);
 		wp_reset_postdata();
 
 	}
